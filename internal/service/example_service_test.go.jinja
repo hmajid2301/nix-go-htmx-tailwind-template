@@ -1,0 +1,29 @@
+package service_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"{{gitlab_url}}/internal/entities"
+	mockService "{{gitlab_url}}/internal/mocks/service"
+	"{{gitlab_url}}/internal/service"
+)
+
+func TestAddExample(t *testing.T) {
+	t.Run("Should create example in DB successfully", func(t *testing.T) {
+		mockStore := mockService.NewMockStorer(t)
+
+		service := service.NewExampleService(mockStore)
+
+		ctx := context.Background()
+		mockStore.EXPECT().
+			AddExample(ctx, "hello")
+			Return(nil)
+
+		err := service.Add(ctx, "fibbing_it")
+		assert.NoError(t, err)
+	})
+
+}

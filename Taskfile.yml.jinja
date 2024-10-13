@@ -1,0 +1,97 @@
+version: "3"
+
+tasks:
+  dev:
+    desc: Start the app in dev mode with live-reloading.
+    env:
+      {{service_prefix}}_LOG_LEVEL: debug
+    cmds:
+      - air
+
+  build:dev:
+    desc: Build the app for development, generates all the files needed for the binary.
+    cmds:
+      - go build -o ./tmp/main .
+
+  lint:
+    desc: Runs the linter.
+    cmds:
+		{% raw %}
+      - golangci-lint run {{.CLI_ARGS}} ./...
+		{% endraw %}
+
+  format:
+    desc: Runs the formatter.
+    env:
+      LOCATIONS: "./internal/ ./tests/ main.go"
+    cmds:
+      - goimports -local {{gitlab_url}} -w $LOCATIONS
+      - golines -m 120 -w $LOCATIONS
+
+  tests:
+    desc: Runs all the tests.
+    cmds:
+      - gotestsum
+
+  tests:unit:
+    desc: Runs all the unit tests.
+    cmds:
+		{% raw %}
+      - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -skip '^TestIntegration' ./internal/...
+		{% endraw %}
+
+  tests:integration:
+    desc: Runs all the integration tests.
+    cmds:
+		{% raw %}
+      - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -run ^TestIntegration ./internal/...
+		{% endraw %}
+
+  tests:e2e:
+    desc: Runs e2e tests with playwright.
+    cmds:
+		{% raw %}
+      - gotestsum --format standard-verbose -- {{.CLI_ARGS}} ./tests/e2e/...
+		{% endraw %}
+
+  coverage:
+    desc: show coverage
+    cmds:
+      - go tool cover -func coverage.txt
+      - gocover-cobertura < coverage.txt > coverage.xml
+    preconditions:
+      - test -f coverage.txt
+
+  generate:
+    desc: Generates all the code needed for the project i.e. sqlc, templ & tailwindcss
+    cmds:
+      - mockery --all
+      - templ generate
+      - tailwindcss -i ./static/css/tailwind.css -o ./static/css/styles.css
+      - sqlc generate
+      - task: format
+
+  release:
+    desc: Release the CLI tool.
+    cmds:
+      - goreleaser release --clean --verbose
+
+  docker:publish:
+    desc: Build and publish the Docker image
+    env:
+      LOCAL_IMAGE: {{project_slug}}
+      FLAKE_TARGET: container
+      IMMUTABLE: "true"
+    cmds:
+      - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+      - |
+        if [ "$IMMUTABLE" = "true" ]; then
+          if docker pull $IMAGE; then
+            echo "Image with tag $IMAGE_TAG already exists. Failing the pipeline."
+            exit 1
+          fi
+        fi
+      - nix build .#${FLAKE_TARGET}
+      - docker load < result
+      - docker image tag $LOCAL_IMAGE:latest $IMAGE
+      - docker push $IMAGE

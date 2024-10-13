@@ -1,0 +1,8 @@
+with-expecter: true
+{% raw %}
+dir: "internal/mocks/{{.PackageName}}"
+{% endraw %}
+packages:
+  {{gitlab_url}}/internal/service:
+    interfaces:
+      Storer: {}

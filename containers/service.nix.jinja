@@ -1,0 +1,23 @@
+{
+  pkgs,
+  package,
+}:
+pkgs.dockerTools.buildImage {
+  name = "{{project_slug}}";
+  tag = "latest";
+  created = "now";
+  copyToRoot = pkgs.buildEnv {
+    name = "image-root";
+    paths = [package];
+    pathsToLink = ["/bin"];
+  };
+  config = {
+    ExposedPorts = {
+      "8080/tcp" = {};
+    };
+    Env = [
+      "{{service_prefix}}_DB_FOLDER=/"
+    ];
+    Cmd = ["${package}/bin/{{projec_slug}}"];
+  };
+}

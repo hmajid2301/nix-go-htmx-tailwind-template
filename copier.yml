@@ -1,0 +1,32 @@
+project_slug:
+  type: str
+  help: Name of your project (lowercase, hyphens like 'banterbus-api')
+
+project_title:
+  type: str
+  help: "Used to name the title banter-bus -> Banter Bus"
+  default: "{{project_slug | title | replace('-', ' ')}}"
+
+service_prefix:
+  type: str
+  help: "Prefix of environment variables for this project (upper case like 'BANTERBUS_API')"
+  default: "{{project_slug | upper | replace('-', '_')}}"
+
+gitlab_username:
+  help: Your GitLab username
+  type: str
+
+gitlab_url:
+  help: The GitLab URL of the project, used as the module name
+  type: str
+  default: "https://gitlab.com/{{gitlab_username}}/{{project_slug}}"
+
+short_description:
+  type: str
+  help: "A short description of the project"
+
+_exclude:
+  - copier.yml
+  - .git
+  - CHANGELOG.md
+  - README.md
