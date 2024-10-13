@@ -1,0 +1,157 @@
+package e2e
+
+import (
+	"context"
+	"log"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
+	"github.com/playwright-community/playwright-go"
+
+	"{{gitlab_url}}/internal/{{project_slug}}test"
+	"{{gitlab_url}}/internal/service"
+	"{{gitlab_url}}/internal/store"
+)
+
+var (
+	pw              *playwright.Playwright
+	browser         playwright.Browser
+	browserContexts []playwright.BrowserContext
+	pages           []playwright.Page
+	expect          playwright.PlaywrightAssertions
+	headless        = os.Getenv("HEADFUL") == ""
+	isChromium      bool
+	isFirefox       bool
+	isWebKit        bool
+	browserName     = getBrowserName()
+	browserType     playwright.BrowserType
+	serverAddress   string
+	testUserNum     = 2
+)
+
+func TestMain(m *testing.M) {
+	server := BeforeAll()
+	code := m.Run()
+	AfterAll(server)
+	os.Exit(code)
+}
+
+func BeforeAll() *httptest.Server {
+	var err error
+	pw, err = playwright.Run()
+	if err != nil {
+		log.Fatalf("could not start Playwright: %v", err)
+	}
+	if browserName == "chromium" || browserName == "" {
+		browserType = pw.Chromium
+	} else if browserName == "firefox" {
+		browserType = pw.Firefox
+	} else if browserName == "webkit" {
+		browserType = pw.WebKit
+	}
+
+	// launch browser, headless or not depending on HEADFUL env
+	browser, err = browserType.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: playwright.Bool(headless),
+	})
+	if err != nil {
+		log.Fatalf("could not launch: %v", err)
+	}
+	// init web-first assertions with 1s timeout instead of default 5s
+	expect = playwright.NewPlaywrightAssertions(1000)
+	isChromium = browserName == "chromium" || browserName == ""
+	isFirefox = browserName == "firefox"
+	isWebKit = browserName == "webkit"
+
+	server, err := newTestServer()
+	if err != nil {
+		log.Fatalf("could not start server: %v", err)
+	}
+
+	ResetBrowserContexts()
+	return server
+}
+
+// AfterAll does cleanup, e.g. stop playwright driver
+func AfterAll(server *httptest.Server) {
+	server.Close()
+	for i := 0; i < testUserNum; i++ {
+		browserContexts[i].Close()
+	}
+	if err := pw.Stop(); err != nil {
+		log.Fatalf("could not start Playwright: %v", err)
+	}
+}
+
+func getBrowserName() string {
+	browserName, hasEnv := os.LookupEnv("BROWSER")
+	if hasEnv {
+		return browserName
+	}
+	return "chromium"
+}
+
+func newTestServer() (*httptest.Server, error) {
+	ctx := context.Background()
+	db, err := {{project_slug}}test.CreateDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	myStore, err := store.NewStore(db)
+	if err != nil {
+		return nil, err
+	}
+
+	exampleService := service.NewExampleService(myStore)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+
+    // TODO: fix this; with actual handlers
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ws" {
+			_ = subscriber.Subscribe(context.Background(), r, w)
+		} else if r.URL.Path == "/" {
+			http.ServeFile(w, r, "../../static")
+		} else {
+			http.NotFound(w, r)
+
+		}
+	}))
+
+	serverAddress = server.Listener.Addr().String()
+	return server, nil
+
+}
+
+func ResetBrowserContexts() {
+	var err error
+	browserContexts = make([]playwright.BrowserContext, testUserNum)
+	pages = make([]playwright.Page, testUserNum)
+
+	for i := 0; i < testUserNum; i++ {
+		browserContexts[i], err = browser.NewContext(playwright.BrowserNewContextOptions{
+			RecordVideo: &playwright.RecordVideo{
+				Dir: "videos/",
+			},
+		})
+		if err != nil {
+			log.Fatalf("could not create a new browser context: %v", err)
+		}
+		page, err := browserContexts[i].NewPage()
+		if err != nil {
+			log.Fatalf("could not create page: %v", err)
+		}
+
+		_, err = page.Goto(serverAddress)
+		if err != nil {
+			log.Fatalf("could not go to page: %v", err)
+		}
+
+		pages[i] = page
+	}
+}
