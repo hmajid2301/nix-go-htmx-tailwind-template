@@ -54,5 +54,5 @@ to keep the front-end stack as simple as possible, i.e. not need to use node to 
 
 ```bash
 nix-shell -p copier
-copier https://gitlab.com/hmajid2301/nix-go-htmx-tailwind-template
+copier copy https://gitlab.com/hmajid2301/nix-go-htmx-tailwind-template banterbus
 ```
