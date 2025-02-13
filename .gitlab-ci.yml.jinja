@@ -8,10 +8,10 @@ default:
   interruptible: true
 
 variables:
-  IMAGE_TAG: v0.1.7.1
+  IMAGE_TAG: v0.1.0
   {{service_prefix}}_CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$IMAGE_TAG
-  POSTGRES_USER: {{service_prefix}}
-  POSTGRES_PASSWORD: {{service_prefix}}
+  POSTGRES_USER: {{project_slug}}
+  POSTGRES_PASSWORD: {{project_slug}}
   POSTGRES_HOST_AUTH_METHOD: trust
 
 stages:
@@ -96,7 +96,7 @@ publish:docker:ci:
   variables:
     IMAGE: ${{service_prefix}}_CI_IMAGE
     FLAKE_TARGET: container-ci
-    LOCAL_IMAGE: {{service_prefix}}-dev
+    LOCAL_IMAGE: {{project_slug}}-dev
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -169,7 +169,7 @@ tests:integration:
       alias: oauth2
   variables:
     {{service_prefix}}_REDIS_ADDRESS: redis:6379
-    {{service_prefix}}_DB_URI: postgresql://{{service_prefix}}:{{service_prefix}}@postgres:5432
+    {{service_prefix}}_DB_URI: postgresql://{{project_slug}}:{{project_slug}}@postgres:5432
     {{service_prefix}}_JWKS_URL: http://oauth2:8080/default/jwks
   script:
     - task tests:integration -- ${GOTEST_EXTRA_ARGS}
@@ -222,7 +222,7 @@ publish:dev:docker:
   needs: []
   variables:
     FLAKE_TARGET: container
-    LOCAL_IMAGE: {{service_prefix}}
+    LOCAL_IMAGE: {{project_slug}}
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   extends:
@@ -268,7 +268,7 @@ publish:prod:docker:
   stage: build
   variables:
     FLAKE_TARGET: container
-    LOCAL_IMAGE: {{service_prefix}}
+    LOCAL_IMAGE: {{project_slug}}
   services:
     - docker:27-dind
   extends:
