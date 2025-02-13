@@ -17,9 +17,11 @@ to keep the front-end stack as simple as possible, i.e. not need to use node to 
   - Backend
     - Go
       - Standard Library HTTP Server
-    - SQLite DB
+    - postgres
+    - redis
   - Frontend
     - htmx
+    - alpinejs
     - Tailwind CSS
 
 ## Features
