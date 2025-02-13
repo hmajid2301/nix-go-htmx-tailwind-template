@@ -19,7 +19,7 @@ gitlab_username:
 gitlab_url:
   help: The GitLab URL of the project, used as the module name
   type: str
-  default: "https://gitlab.com/{{gitlab_username}}/{{project_slug}}"
+  default: "gitlab.com/{{gitlab_username}}/{{project_slug}}"
 
 short_description:
   type: str

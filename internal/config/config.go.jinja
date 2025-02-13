@@ -13,9 +13,15 @@ import (
 
 // INFO: we need another struct for actual config values once we've passed the input ones
 type Config struct {
-	DBFolder string
-	Server   Server
-	App      App
+	DB      Database
+	Server  Server
+	Redis   Redis
+	App     App
+	JWT     JWT
+}
+
+type Database struct {
+	URI string
 }
 
 type Server struct {
@@ -23,21 +29,47 @@ type Server struct {
 	Port int
 }
 
-type App struct {
-	Environment string
-	LogLevel    slog.Level
+type Redis struct {
+	Address string
 }
 
-type ConfigIn struct {
-	DBFolder    string `env:"{{service_prefix}}_DB_FOLDER"`
-	Environment string `env:"{{service_prefix}}_ENVIRONMENT, default=production"`
-	LogLevel    string `env:"{{service_prefix}}_LOG_LEVEL,   default=info"`
-	Host        string `env:"{{service_prefix}}_WEBSERVER_HOST, default=0.0.0.0"`
-	Port        int    `env:"{{service_prefix}}_WEBSERVER_PORT, default=8080"`
+type JWT struct {
+	JWKSURL    string
+	AdminGroup string
+}
+
+type App struct {
+	Environment   string
+	LogLevel      slog.Level
+	DefaultLocale i18n.Code
+	Retries       int
+	BaseDelay     time.Duration
+}
+
+type In struct {
+	DBUsername string `env:"{{service_prefix}}_DB_USERNAME"`
+	DBPassword string `env:"{{service_prefix}}_DB_PASSWORD"`
+	DBHost     string `env:"{{service_prefix}}_DB_HOST"`
+	DBPort     string `env:"{{service_prefix}}_DB_PORT, default=5432"`
+	DBName     string `env:"{{service_prefix}}_DB_NAME, default=banterbus"`
+
+	RedisAddress string `env:"{{service_prefix}}_REDIS_ADDRESS"`
+
+	Retries   int `env:"{{service_prefix}}_RETRIES, default=3"`
+	BaseDelay int `env:"{{service_prefix}}_BASE_DELAY_IN_MS, default=100"`
+
+	Environment   string `env:"{{service_prefix}}_ENVIRONMENT, default=production"`
+	LogLevel      string `env:"{{service_prefix}}_LOG_LEVEL, default=info"`
+	Host          string `env:"{{service_prefix}}_WEBSERVER_HOST, default=0.0.0.0"`
+	Port          int    `env:"{{service_prefix}}_WEBSERVER_PORT, default=8080"`
+	DefaultLocale string `env:"{{service_prefix}}_DEFAULT_LOCALE, default=en-GB"`
+
+	JWKSURL    string `env:"{{service_prefix}}_JWKS_URL"`
+	AdminGroup string `env:"{{service_prefix}}_JWT_ADMIN_GROUP"`
 }
 
 func LoadConfig(ctx context.Context) (Config, error) {
-	var input ConfigIn
+	var input In
 	if err := envconfig.Process(ctx, &input); err != nil {
 		return Config{}, err
 	}
@@ -47,30 +79,37 @@ func LoadConfig(ctx context.Context) (Config, error) {
 		return Config{}, err
 	}
 
+	uri := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s",
+		input.DBUsername,
+		input.DBPassword,
+		input.DBHost,
+		input.DBPort,
+		input.DBName,
+	)
+
 	config := Config{
-		DBFolder: input.DBFolder,
+		DB: Database{
+			URI: uri,
+		},
 		Server: Server{
 			Host: input.Host,
 			Port: input.Port,
 		},
-		App: App{
-			Environment: input.Environment,
-			LogLevel:    parseLogLevel(input.LogLevel),
+		Redis: Redis{
+			Address: input.RedisAddress,
 		},
-	}
-
-	if config.DBFolder == "" {
-		scope := gap.NewScope(gap.User, "{{service_prefix}}")
-		dirs, err := scope.DataDirs()
-		if err != nil {
-			return config, fmt.Errorf("unable to get data directory: %w", err)
-		}
-
-		dbFolder, _ := os.UserHomeDir()
-		if len(dirs) > 0 {
-			dbFolder = dirs[0]
-		}
-		config.DBFolder = dbFolder
+		JWT: JWT{
+			JWKSURL:    input.JWKSURL,
+			AdminGroup: input.AdminGroup,
+		},
+		App: App{
+			Environment:   input.Environment,
+			LogLevel:      parseLogLevel(input.LogLevel),
+			DefaultLocale: i18n.Code(input.DefaultLocale),
+			BaseDelay:     time.Millisecond * time.Duration(input.BaseDelay),
+			Retries:       input.Retries,
+		},
 	}
 
 	return config, nil

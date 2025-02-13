@@ -14,17 +14,13 @@ pkgs.dockerTools.buildImage {
     pathsToLink = ["/bin"];
     paths = with pkgs;
       [
-        coreutils
-        gnugrep
-        nix
-        bash
-        dockerTools.caCertificates
-        cacert.out
-        which
-        curl
-        git
-        goEnv
-        gomod2nix
+          coreutils
+          gnugrep
+          bash
+          curl
+          git
+          goEnv
+          gomomod2nix
       ]
       ++ myPackages;
   };
@@ -36,6 +32,10 @@ pkgs.dockerTools.buildImage {
       "USER=nobody"
       "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
       "SSL_CERT_DIR=${pkgs.cacert}/etc/ssl/certs/"
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1"
+        "PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}"
+        "PLAYWRIGHT_NODEJS_PATH=${pkgs.nodejs}/bin/node"
+        "PLAYWRIGHT_DRIVER_PATH=${pkgs.playwright-driver}"
     ];
   };
 }

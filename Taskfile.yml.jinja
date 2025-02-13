@@ -5,20 +5,26 @@ tasks:
     desc: Start the app in dev mode with live-reloading.
     env:
       {{service_prefix}}_LOG_LEVEL: debug
+      {{service_prefix}}_DB_HOST: localhost
+      {{service_prefix}}_DB_USERNAME: postgres
+      {{service_prefix}}_DB_PASSWORD: postgres
+      {{service_prefix}}_DB_NAME: postgres
+      {{service_prefix}}_REDIS_ADDRESS: "localhost:6379"
+      {{service_prefix}}_PLAYWRIGHT_HEADLESS: false
+      {{service_prefix}}_ENVIRONMENT: local
+      {{service_prefix}}_JWKS_URL: http://localhost:9090/default/jwks
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     cmds:
+      - podman-compose up -d
+      - task: watch
       - air
-
-  build:dev:
-    desc: Build the app for development, generates all the files needed for the binary.
-    cmds:
-      - go build -o ./tmp/main .
 
   lint:
     desc: Runs the linter.
     cmds:
-		{% raw %}
+    {% raw -%}
       - golangci-lint run {{.CLI_ARGS}} ./...
-		{% endraw %}
+    {%- endraw %}
 
   format:
     desc: Runs the formatter.
@@ -36,31 +42,48 @@ tasks:
   tests:unit:
     desc: Runs all the unit tests.
     cmds:
-		{% raw %}
+    {% raw -%}
       - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -skip '^TestIntegration' ./internal/...
-		{% endraw %}
+    {%- endraw %}
 
   tests:integration:
     desc: Runs all the integration tests.
     cmds:
-		{% raw %}
+    {% raw -%}
       - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -run ^TestIntegration ./internal/...
-		{% endraw %}
+    {%- endraw %}
 
   tests:e2e:
     desc: Runs e2e tests with playwright.
     cmds:
-		{% raw %}
+    {% raw -%}
       - gotestsum --format standard-verbose -- {{.CLI_ARGS}} ./tests/e2e/...
-		{% endraw %}
+    {%- endraw %}
+
+  tests:e2e:quiet:
+    desc: Runs e2e tests with playwright without any logging as this can be super verbose.
+    env:
+      {{service_prefix}}_LOG_DISABLED: true
+      {{service_prefix}}_PLAYWRIGHT_HEADLESS: true
+    cmds:
+    {% raw -%}
+      - gotestsum --format dots -- ./tests/e2e/... {{.CLI_ARGS}}
+    {%- endraw %}
 
   coverage:
     desc: show coverage
     cmds:
-      - go tool cover -func coverage.txt
-      - gocover-cobertura < coverage.txt > coverage.xml
-    preconditions:
-      - test -f coverage.txt
+      - go tool covdata textfmt -i="coverage" -o combined-coverage.txt
+      - go tool cover -func=combined-coverage.txt -o coverage.xml
+
+  watch:
+    desc: Watch for file changes and run commands, i.e. generate templates or tailwindcss
+    cmds:
+      - templ generate -watch --proxy="http://localhost:8080" --open-browser=true &
+      - tailwindcss --watch=always -i ./static/css/tailwind.css -o ./static/css/styles.css --minify &
+      # TODO: do we want to add watch commands for the following?
+      # - mockery --all
+      # - sqlc generate
 
   generate:
     desc: Generates all the code needed for the project i.e. sqlc, templ & tailwindcss
@@ -72,7 +95,7 @@ tasks:
       - task: format
 
   release:
-    desc: Release the CLI tool.
+    desc: Release the web tool.
     cmds:
       - goreleaser release --clean --verbose
 
@@ -95,3 +118,8 @@ tasks:
       - docker load < result
       - docker image tag $LOCAL_IMAGE:latest $IMAGE
       - docker push $IMAGE
+
+  ci:local:
+    desc: Run gitlab ci locally
+    cmds:
+      - job=$(yq 'keys | .[] | select(. != "image" and . != "workflow" and . != "stages" and . != "variables" and . != "default" and (. | test("^[^.]")) )' .gitlab-ci.yml | gum filter --placeholder "Select a job...") && gitlab-ci-local --variable CI_REGISTRY=registry.gitlab.com "$job"

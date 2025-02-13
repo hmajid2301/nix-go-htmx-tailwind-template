@@ -1,58 +1,112 @@
-package transport
+package http
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
+	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/invopop/ctxi18n/i18n"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"gitlab.com/hmajid2301/banterbus/internal/transport/http/middleware"
 )
 
+type Exampler interface {
+	Add(ctx context.Context, field string) error
+}
+
 type Server struct {
-	logger    *slog.Logger
-	websocket websocketer
-	srv       *http.Server
+	Logger         *slog.Logger
+	Config         ServerConfig
+	Server         *http.Server
+	ExampleService Exampler
 }
 
-type websocketer interface {
-	Subscribe(ctx context.Context, r *http.Request, w http.ResponseWriter) (err error)
+type ServerConfig struct {
+	Host          string
+	Port          int
+	Environment   string
+	DefaultLocale i18n.Code
+	AuthDisabled  bool
 }
 
-func NewServer(websocketer websocketer, logger *slog.Logger, staticFS http.FileSystem) *Server {
+func NewServer(
+	exampler Exampler,
+	logger *slog.Logger,
+	staticFS http.FileSystem,
+	keyfunc jwt.Keyfunc,
+	config ServerConfig,
+
+) *Server {
 	s := &Server{
-		websocket: websocketer,
-		logger:    logger,
+		ExampleService: exampler,
+		Logger:         logger,
+		Config:         config,
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(staticFS))
-
-	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
-		// Configure the "http.route" for the HTTP instrumentation.
-		handler := otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc))
-		mux.Handle(pattern, handler)
-	}
-
-	handler := otelhttp.NewHandler(mux, "/")
-	handleFunc("/ws", s.subscribeHandler)
-	handleFunc("/health", s.health)
-	handleFunc("/readiness", s.readiness)
-
-	srv := &http.Server{
-		Addr:         "0.0.0.0:8080",
+	handler := s.setupHTTPRoutes(config, keyfunc, staticFS)
+	writeTimeout := 10
+	httpServer := &http.Server{
+		Addr:         fmt.Sprintf("%s:%d", s.Config.Host, s.Config.Port),
 		ReadTimeout:  time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: time.Duration(writeTimeout) * time.Second,
 		Handler:      handler,
 	}
-	s.srv = srv
+	s.Server = httpServer
 
 	return s
 }
 
-func (s *Server) Serve() error {
-	s.logger.Info("starting server")
-	err := s.srv.ListenAndServe()
+func (s *Server) setupHTTPRoutes(config ServerConfig, keyfunc jwt.Keyfunc, staticFS http.FileSystem) http.Handler {
+	m := middleware.Middleware{
+		DefaultLocale: config.DefaultLocale.String(),
+		Logger:        s.Logger,
+		Keyfunc:       keyfunc,
+		DisableAuth:   config.AuthDisabled,
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", m.Locale(http.HandlerFunc(s.indexHandler)))
+	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(staticFS)))
+
+	mux.HandleFunc("/health", s.healthHandler)
+	mux.HandleFunc("/readiness", s.readinessHandler)
+
+	if config.Environment == "local" {
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
+
+	httpSpanName := func(_ string, r *http.Request) string {
+		return fmt.Sprintf("HTTP %s %s", r.Method, r.URL.Path)
+	}
+
+	otelFilters := func(r *http.Request) bool {
+		return r.URL.Path != "/health" && r.URL.Path != "/readiness" && strings.HasPrefix(r.URL.Path, "/static")
+	}
+
+	routes := m.Logging(mux)
+
+	handler := otelhttp.NewHandler(
+		routes,
+		"/",
+		otelhttp.WithFilter(otelFilters),
+		otelhttp.WithSpanNameFormatter(httpSpanName),
+	)
+	return handler
+}
+
+func (s *Server) Serve(ctx context.Context) error {
+	s.Logger.InfoContext(ctx, "starting server")
+	err := s.Server.ListenAndServe()
 	if err != nil {
 		return err
 	}
@@ -61,24 +115,7 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	s.logger.Info("shutting down server")
-	err := s.srv.Shutdown(ctx)
+	s.Logger.InfoContext(ctx, "shutting down server")
+	err := s.Server.Shutdown(ctx)
 	return err
-}
-
-func (s *Server) subscribeHandler(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("subscribe handler called")
-	err := s.websocket.Subscribe(r.Context(), r, w)
-	if err != nil {
-		s.logger.Error("subscribe failed", slog.Any("error", err))
-		return
-	}
-}
-
-func (s *Server) health(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) readiness(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }

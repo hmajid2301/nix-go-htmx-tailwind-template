@@ -1,7 +1,8 @@
 with-expecter: true
-{% raw %}
-dir: "internal/mocks/{{.PackageName}}"
-{% endraw %}
+{% raw -%}
+dir: "internal/{{.PackageName}}/mocks"
+filename: "mock_{{ .InterfaceName | lower }}.go"
+{%- endraw %}
 packages:
   {{gitlab_url}}/internal/service:
     interfaces:

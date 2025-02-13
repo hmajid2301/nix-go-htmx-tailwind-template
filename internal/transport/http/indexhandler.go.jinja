@@ -1,0 +1,22 @@
+package http
+
+import (
+	"log/slog"
+	"net/http"
+
+	"github.com/a-h/templ"
+
+	"{{gitlab_url}}/internal/views"
+	"{{gitlab_url}}/internal/views/pages"
+)
+
+func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
+	languages, err := views.ListLanguages()
+	if err != nil {
+		s.Logger.ErrorContext(r.Context(), "failed to list supported languages", slog.Any("error", err))
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	templ.Handler(pages.Index(languages, s.Config.Environment)).ServeHTTP(w, r)
+}

@@ -5,9 +5,10 @@ import (
 )
 
 func TestE2EExample(t *testing.T) {
-	t.Cleanup(ResetBrowserContexts)
-
 	t.Run("Should do something", func(t *testing.T) {
+        page, teardown := setupTest()
+        t.Cleanup(func() { teardown(page) })
+
 		expect.Locator(pages[0].Locator("#example")).ToBeVisible()
 	})
 }

@@ -1,9 +1,17 @@
 version: "2"
 sql:
-  - engine: "sqlite"
-    queries: "./db/query.sql"
-    schema: "db/migrations"
+  - engine: "postgresql"
+    queries: "internal/store/db/sqlc/query.sql"
+    schema: "internal/store/db/sqlc/migrations"
     gen:
       go:
-        package: "sqlc"
+        package: "db"
         out: "internal/store/db"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        overrides:
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.NullUUID"
+            nullable: true

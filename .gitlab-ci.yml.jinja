@@ -8,8 +8,11 @@ default:
   interruptible: true
 
 variables:
-  IMAGE_TAG: 0.1.0
+  IMAGE_TAG: v0.1.7.1
   {{service_prefix}}_CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$IMAGE_TAG
+  POSTGRES_USER: {{service_prefix}}
+  POSTGRES_PASSWORD: {{service_prefix}}
+  POSTGRES_HOST_AUTH_METHOD: trust
 
 stages:
   - pre
@@ -18,6 +21,7 @@ stages:
   - build
   - deploy
   - release
+  - post
 
 .task:
   stage: test
@@ -29,9 +33,9 @@ stages:
       - ${GOPATH}/pkg/mod
     policy: pull
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes:
-        - "*.go"
   before_script:
     # INFO: Used to create directory, needed for tests and linter
     - mkdir -p /tmp
@@ -39,19 +43,22 @@ stages:
 .test:
   extends:
     - .task
-  coverage: /total:\s+\(statements\)\s+\d+.\d+%/
   variables:
      GOTESTSUM_JUNITFILE: "report.xml"
      XDG_DATA_HOME: "/tmp/"
-     GOTEST_EXTRA_ARGS: "-coverprofile=coverage.txt"
-  after_script:
-    - task coverage
+     GOTEST_EXTRA_ARGS: '-args -test.gocoverdir=$CI_PROJECT_DIR/coverage'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  before_script:
+    - mkdir -p $CI_PROJECT_DIR/coverage /tmp  $CI_PROJECT_DIR/e2e/screenshots
   artifacts:
+    paths:
+      - coverage
     reports:
       junit: report.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
 
 .docker:
   variables:
@@ -60,28 +67,48 @@ stages:
     DOCKER_TLS_CERTDIR: ""
     IMMUTABLE: "true"
   services:
-    - docker:27-dind
+    - docker:dind
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
   script:
     - echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf
     - nix-env -iA nixpkgs.docker nixpkgs.go-task
     - task docker:publish
+
+.deploy:
+  stage: deploy
+  image:
+    name: ghcr.io/fluxcd/flux-cli:v2.4.0
+    entrypoint: ['']
+  timeout: 10m
+  script:
+    - IMAGE=$(cat image_name.txt)
+    - echo "Trying to deploy this image to pod" $IMAGE
+    - kubectl config use-context hmajid2301/k3s-config:ms01
+    - flux reconcile image repository {{service_prefix}}
+    - kubectl wait --for=jsonpath='{.spec.template.spec.containers[0].image}'="$(cat image_name.txt)" deployment/{{service_prefix}} -n $NAMESPACE --timeout=600s
+    - kubectl wait --for=condition=available --timeout=600s deployment/{{service_prefix}} -n $NAMESPACE
+
 
 publish:docker:ci:
   stage: pre
   variables:
     IMAGE: ${{service_prefix}}_CI_IMAGE
     FLAKE_TARGET: container-ci
-    LOCAL_IMAGE: {{project_slug}}-dev
+    LOCAL_IMAGE: {{service_prefix}}-dev
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
         - "containers/ci.nix"
+        - "flake.nix"
+        - "flake.lock"
   extends:
     - .docker
   before_script:
     - |
-      if ! git diff --name-only HEAD~1 | grep -q "containers/ci.nix"; then
-        echo "No changes in containers/ci.nix in the current commit. Skipping job."
+      if ! git diff --name-only HEAD~1 | grep -q ".nix"; then
+        echo "No changes in *.nix in the current commit. Skipping job."
         exit 0
       fi
 
@@ -91,10 +118,9 @@ download:dependency:
   stage: deps
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      # INFO: Commented out until cache works with self-hosted runner, so this always run
-      # changes:
-      #   - go.mod
-      #   - go.sum
+      changes:
+        - go.mod
+        - go.sum
   script:
     - go mod download
   cache:
@@ -131,94 +157,143 @@ tests:unit:
 tests:integration:
   extends:
     - .test
+  services:
+    - redis:7.4.1
+    - name: postgres:16.6
+      alias: postgres
+      command:
+        - "postgres"
+        - "-c"
+        - "max_connections=1000"
+    - name: ghcr.io/navikt/mock-oauth2-server:2.1.10
+      alias: oauth2
+  variables:
+    {{service_prefix}}_REDIS_ADDRESS: redis:6379
+    {{service_prefix}}_DB_URI: postgresql://{{service_prefix}}:{{service_prefix}}@postgres:5432
+    {{service_prefix}}_JWKS_URL: http://oauth2:8080/default/jwks
   script:
     - task tests:integration -- ${GOTEST_EXTRA_ARGS}
 
-# TODO: work out how to work with Nix
 test:e2e:
   extends:
     - .test
-  image: ghcr.io/manfromth3m0on/playwright-go:v0.4702.0
-  before_script:
-    - apt-get install wget tar curl -y
-    - wget https://go.dev/dl/go1.22.5.linux-amd64.tar.gz
-    - tar -xvf go1.22.5.linux-amd64.tar.gz -C /usr/local > /dev/null 2>&1
-    - sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
-    - go install gotest.tools/gotestsum@latest
-    - go install github.com/boumenot/gocover-cobertura@latest
-    - mv ./bin/task /usr/local/bin/task
-    - ls -al $GOPATH/bin
-    - export PATH="/usr/local/go/bin:$GOPATH/bin:$PATH"
+  services:
+    - redis:7.4.1
+    - postgres:16.6
+    - name: ghcr.io/navikt/mock-oauth2-server:2.1.10
+      alias: oauth2
+  variables:
+    {{service_prefix}}_REDIS_ADDRESS: redis:6379
+    {{service_prefix}}_DB_URI: postgresql://{{service_prefix}}:{{service_prefix}}@postgres:5432
+    {{service_prefix}}_JWKS_URL: http://oauth2:8080/default/jwks
+    {{service_prefix}}_LOG_LEVEL: INFO
+    {{service_prefix}}_ENVIRONMENT: local
   script:
     - task tests:e2e -- ${GOTEST_EXTRA_ARGS}
-  after_script:
-    - export PATH="/usr/local/go/bin:$GOPATH/bin:$PATH"
-    - which gocover-cobertura
-    - task coverage
   artifacts:
     when: always
+    reports:
+      junit: report.xml
     paths:
+      - coverage
       - tests/e2e/videos/*
+      - tests/e2e/*.png
 
-#TODO: tag image using dev SHA
+combine:coverage:
+  stage: build
+  extends:
+    - .task
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - task coverage
+  coverage: /total:\s+\(statements\)\s+\d+.\d+%/
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
 publish:dev:docker:
   stage: build
   needs: []
   variables:
-    IMAGE: $CI_REGISTRY_IMAGE:dev
     FLAKE_TARGET: container
-    LOCAL_IMAGE: {{project_slug}}
-    IMMUTABLE: "false"
+    LOCAL_IMAGE: {{service_prefix}}
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes:
-        - "*.go"
-        - "./static/**/*"
   extends:
     - .docker
+  before_script:
+    - export IMAGE="$CI_REGISTRY_IMAGE:dev-$CI_COMMIT_SHA-$(date +%s)"
+    - echo $IMAGE > image_name.txt
+  artifacts:
+    paths:
+      - image_name.txt
 
-deploy:dev:
-  stage: deploy
-  image:
-    name: bitnami/kubectl:latest
-    entrypoint: ['']
+check_deploy:dev:
+  extends: .deploy
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes:
-        - "*.go"
-        - "./static/**/*"
-  script:
-    - kubectl config use-context hmajid2301/k3s-config:ms01
-    - kubectl rollout restart deployment {{project_slug}} -n dev
+  variables:
+    NAMESPACE: dev
   dependencies:
     - publish:dev:docker
+
+smoke:tests:dev:e2e:
+  extends:
+    - .test
+  stage: post
+  variables:
+    {{service_prefix}}_PLAYWRIGHT_URL: https://dev.{{service_prefix}}.games
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+   - task tests:e2e -- -v -run 'TestE2ERound/Should_successfully_complete_an_entire_game_where_the_fibber_is_caught_first_time'
+  artifacts:
+    when: always
+    paths:
+      - coverage
+      - tests/e2e/videos/*
+      - tests/e2e/*.png
+  dependencies:
+    - check_deploy:dev
 
 #INFO: Because Nix docker builds are immutable, we can just rebuild the image here for production
 # If we wanted to be more efficient we could work out way to retag a dev image. But this is good enough for now.
 publish:prod:docker:
   stage: build
-  rules:
-    - if: $CI_COMMIT_TAG
   variables:
-    IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
     FLAKE_TARGET: container
-    LOCAL_IMAGE: {{project_slug}}
-    IMMUTABLE: "false"
+    LOCAL_IMAGE: {{service_prefix}}
   services:
     - docker:27-dind
   extends:
     - .docker
-
-deploy:prod:
-  stage: deploy
-  image:
-    name: bitnami/kubectl:latest
-    entrypoint: ['']
   rules:
-    - if: $CI_COMMIT_TAG
-  script:
-    - kubectl config use-context hmajid2301/k3s-config:ms01
-    - kubectl rollout restart deployment {{project_slug}} -n prod
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_TAG || $CI_COMMIT_BRANCH == "main"
+  before_script:
+    - export IMAGE="$CI_REGISTRY_IMAGE:prod-$CI_COMMIT_SHA-$(date +%s)"
+    - echo $IMAGE > image_name.txt
+  artifacts:
+    paths:
+      - image_name.txt
+
+check_deploy:prod:
+  extends: .deploy
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_TAG || $CI_COMMIT_BRANCH == "main"
+  variables:
+    NAMESPACE: prod
+  dependencies:
+    - publish:prod:docker
 
 release:
   stage: release
@@ -231,3 +306,31 @@ release:
   script:
     - task release
 
+smoke:tests:prod:e2e:
+  extends:
+    - .test
+  stage: post
+  variables:
+    {{service_prefix}}_PLAYWRIGHT_URL: https://{{service_prefix}}.games
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: always
+    - if: $CI_COMMIT_TAG || $CI_COMMIT_BRANCH == "main"
+  script:
+   - task tests:e2e -- -v -run 'TestE2ERound/Should_successfully_complete_an_entire_game_where_the_fibber_is_caught_first_time'
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" != "success" ]; then
+        curl -X POST \
+            -H "Authorization: Bearer $NOTIFY_TOKEN" "https://notify.homelab.haseebmajid.dev/message" \
+            -F "title=Job Failed" \
+            -F "message=The smoke:tests:e2e job has failed in the pipeline. Job URL: $CI_JOB_URL"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - coverage
+      - tests/e2e/videos/*
+      - tests/e2e/*.png
+  dependencies:
+    - check_deploy:prod

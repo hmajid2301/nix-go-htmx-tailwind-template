@@ -3,6 +3,14 @@
 	"extends": [
 		"config:recommended"
 	],
+	"postUpgradeTasks": {
+		"commands": [
+			"task generate"
+		],
+		"allowedPostUpgradeCommands": [
+			"^task generate$"
+		]
+	},
 	"packageRules": [
 		{
 			"groupName": "all non-major dependencies",
@@ -13,7 +21,8 @@
 			"matchUpdateTypes": [
 				"minor",
 				"patch"
-			]
+			],
+			"automerge": true
 		}
 	]
 }

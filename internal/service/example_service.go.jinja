@@ -2,6 +2,10 @@ package service
 
 import (
 	"context"
+
+	"github.com/google/uuid"
+
+	"{{gitlab_url}}/internal/store/db"
 )
 
 type ExampleService struct {
@@ -9,15 +13,16 @@ type ExampleService struct {
 }
 
 type Storer interface {
-	AddExample(ctx context.Context, field string) error
+	db.Querier
 }
 
-func NewLobbyService(store Storer) *ExampleService {
+func NewExampleService(store Storer) *ExampleService {
 	return &ExampleService{store: store}
 }
 
 func (r *ExampleService) Add(ctx context.Context, field string) error {
-	err := r.store.AddExample(ctx, field)
+	u := uuid.Must(uuid.NewV7())
+	_, err := r.store.AddExample(ctx, u)
 	if err != nil {
 		return err
 	}
