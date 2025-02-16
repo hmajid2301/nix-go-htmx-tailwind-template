@@ -2,7 +2,9 @@ package http
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/http/pprof"
@@ -13,8 +15,11 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"gitlab.com/hmajid2301/banterbus/internal/transport/http/middleware"
+	"{{gitlab_url}}/internal/transport/http/middleware"
 )
+
+//go:embed static
+var staticFiles embed.FS
 
 type Exampler interface {
 	Add(ctx context.Context, field string) error
@@ -38,18 +43,21 @@ type ServerConfig struct {
 func NewServer(
 	exampler Exampler,
 	logger *slog.Logger,
-	staticFS http.FileSystem,
 	keyfunc jwt.Keyfunc,
 	config ServerConfig,
-
-) *Server {
+) (*Server, error) {
 	s := &Server{
 		ExampleService: exampler,
 		Logger:         logger,
 		Config:         config,
 	}
 
-	handler := s.setupHTTPRoutes(config, keyfunc, staticFS)
+	fsys, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create embed file system: %w", err)
+	}
+
+	handler := s.setupHTTPRoutes(config, keyfunc, fsys)
 	writeTimeout := 10
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", s.Config.Host, s.Config.Port),
@@ -59,10 +67,10 @@ func NewServer(
 	}
 	s.Server = httpServer
 
-	return s
+	return s, nil
 }
 
-func (s *Server) setupHTTPRoutes(config ServerConfig, keyfunc jwt.Keyfunc, staticFS http.FileSystem) http.Handler {
+func (s *Server) setupHTTPRoutes(config ServerConfig, keyfunc jwt.Keyfunc, fsys fs.FS) http.Handler {
 	m := middleware.Middleware{
 		DefaultLocale: config.DefaultLocale.String(),
 		Logger:        s.Logger,
@@ -72,7 +80,9 @@ func (s *Server) setupHTTPRoutes(config ServerConfig, keyfunc jwt.Keyfunc, stati
 
 	mux := http.NewServeMux()
 	mux.Handle("/", m.Locale(http.HandlerFunc(s.indexHandler)))
-	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(staticFS)))
+
+	static := http.FileServer(http.FS(fsys))
+	mux.Handle("/static/", http.StripPrefix("/static", static))
 
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.HandleFunc("/readiness", s.readinessHandler)

@@ -44,9 +44,9 @@ func SetupOTelSDK(ctx context.Context, environment string) (shutdown func(contex
 		resource.WithContainerID(),
 		resource.WithAttributes(
 			semconv.ServiceNamespaceKey.String(environment),
-			semconv.ServiceNameKey.String("banterbus"),
+			semconv.ServiceNameKey.String("{{project_slug}}"),
 		),
-		// resource.WithSchemaURL("https://gitlab.com/hmajid2301/banterbus"),
+		// resource.WithSchemaURL("https://{{gitlab_url}}"),
 	)
 	if err != nil {
 		handleErr(err)

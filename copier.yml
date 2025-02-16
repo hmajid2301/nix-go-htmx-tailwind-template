@@ -30,3 +30,7 @@ _exclude:
   - .git
   - CHANGELOG.md
   - README.md
+
+_tasks:
+  - go mod tidy
+  - task generate

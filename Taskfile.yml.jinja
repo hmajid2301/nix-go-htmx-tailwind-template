@@ -92,6 +92,7 @@ tasks:
       - templ generate
       - tailwindcss -i ./static/css/tailwind.css -o ./static/css/styles.css
       - sqlc generate
+      - gomod2nix generate
       - task: format
 
   release:

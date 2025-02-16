@@ -102,7 +102,7 @@ func setupTest() (playwright.Page, func(page playwright.Page) error) {
   }
 
 
-	return pages, func(page playwright.Page) error {
+	return page, func(page playwright.Page) error {
     err := page.Close()
     return err
 	}

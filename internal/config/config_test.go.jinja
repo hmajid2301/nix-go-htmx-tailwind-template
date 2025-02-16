@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -18,31 +18,41 @@ func TestLoadConfig(t *testing.T) {
 		actualCfg, err := config.LoadConfig(ctx)
 		assert.NoError(t, err)
 
-		state := os.Getenv("XDG_DATA_HOME")
-		configPath := filepath.Join(state, "banterbus")
 		expectedCfg := config.Config{
-			DBFolder: configPath,
 			App: config.App{
-				Environment: "production",
-				LogLevel:    slog.LevelInfo,
+				Environment:   "production",
+				LogLevel:      slog.LevelInfo,
+				DefaultLocale: "en-GB",
+				BaseDelay:     100 * time.Millisecond,
+				Retries:       3,
 			},
 			Server: config.Server{
 				Host: "0.0.0.0",
 				Port: 8080,
 			},
+			DB: config.Database{
+				URI: "postgresql://:@:5432/{{project_slug}}",
+			},
+			JWT: config.JWT{
+				JWKSURL:    "",
+				AdminGroup: "",
+			},
 		}
 
 		assert.Equal(t, expectedCfg, actualCfg)
-
 	})
 
 	t.Run("Should load config from environment values", func(t *testing.T) {
 		ctx := context.Background()
-		os.Setenv("{{service_prefix}}_DB_FOLDER", "/home/test")
-		config, err := config.LoadConfig(ctx)
+		os.Setenv("{{service_prefix}}_DB_USERNAME", "{{project_slug}}")
+		os.Setenv("{{service_prefix}}_DB_PASSWORD", "{{project_slug}}")
+		os.Setenv("{{service_prefix}}_DB_HOST", "localhost")
 
+		config, err := config.LoadConfig(ctx)
 		assert.NoError(t, err)
-		assert.Equal(t, "/home/test", config.DBFolder)
+
+		expectedURI := "postgresql://{{project_slug}}:{{project_slug}}@localhost:5432/{{project_slug}}"
+		assert.Equal(t, expectedURI, config.DB.URI)
 	})
 
 	t.Run("Should default to info level logs", func(t *testing.T) {

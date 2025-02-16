@@ -9,6 +9,6 @@ func TestE2EExample(t *testing.T) {
         page, teardown := setupTest()
         t.Cleanup(func() { teardown(page) })
 
-		expect.Locator(pages[0].Locator("#example")).ToBeVisible()
+		expect.Locator(page.Locator("#example")).ToBeVisible()
 	})
 }

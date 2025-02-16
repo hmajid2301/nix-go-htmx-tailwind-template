@@ -33,9 +33,6 @@ import (
 	"{{gitlab_url}}/internal/views"
 )
 
-//go:embed internal/store/db/sqlc/migrations/*.sql
-var migrations embed.FS
-
 //go:embed static
 var staticFiles embed.FS
 
@@ -131,7 +128,10 @@ func mainLogic() error {
 		DefaultLocale: conf.App.DefaultLocale,
 		Environment:   conf.App.Environment,
 	}
-	server := transporthttp.NewServer(exampleService, logger, http.FS(fsys), k.Keyfunc, serverConfig)
+	server, err := transporthttp.NewServer(exampleService, logger, k.Keyfunc, serverConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create server: %w", err)
+	}
 
 	timeoutSeconds := 15
 	go terminateHandler(ctx, logger, server, timeoutSeconds)
@@ -160,22 +160,4 @@ func terminateHandler(ctx context.Context, logger *slog.Logger, srv *transportht
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.ErrorContext(ctx, "unexpected error while shutting down server", slog.Any("error", err))
 	}
-}
-
-func runDBMigrations(pool *pgxpool.Pool) error {
-	goose.SetBaseFS(migrations)
-	goose.WithLogger(goose.NopLogger())
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return err
-	}
-
-	cp := pool.Config().ConnConfig.ConnString()
-	db, err := sql.Open("pgx/v5", cp)
-	if err != nil {
-		return err
-	}
-
-	err = goose.Up(db, "internal/store/db/sqlc/migrations")
-	return err
 }
