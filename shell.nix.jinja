@@ -18,10 +18,7 @@
     hooks = {
       golangci-lint.enable = true;
       gotest.enable = true;
-      golines = {
-        enable = true;
-        settings = {flags = "-m 120";};
-      };
+      gofmt.enable = true;
       generate = {
         enable = true;
         name = "Generate code such as tailwindcss, templ components and sqlc";
@@ -39,6 +36,7 @@ in
       export PLAYWRIGHT_NODEJS_PATH="${pkgs.nodejs}/bin/node"
       export PLAYWRIGHT_DRIVER_PATH="${pkgs.playwright-driver}"
       export GOOSE_MIGRATION_DIR="./internal/store/db/sqlc/migrations"
+      source .env.local
 
       ${pre-commit-check.shellHook}
     '';

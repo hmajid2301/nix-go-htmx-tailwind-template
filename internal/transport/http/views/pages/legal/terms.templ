@@ -1,0 +1,89 @@
+package legal
+
+import (
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/auth"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/layouts"
+)
+
+templ TermsAndConditions(title string, description string, auth auth.AuthState) {
+	@layouts.NavBarFooterBase(title, description, auth) {
+		<div class="container flex flex-col content-center px-4 pt-20 mx-auto max-w-4xl min-h-screen bg-base-100">
+			<div class="mb-8">
+				<h1 class="text-4xl font-bold text-neutral">Terms & Conditions</h1>
+				<p class="text-sm text-neutral">Last Updated: February 26, 2025</p>
+			</div>
+			@SectionTitle("Introduction") {
+				<p class="mb-4 text-neutral">
+					Our Terms and Conditions (hereinafter, "T&C") constitute a legally binding agreement between Go Feedback (hereinafter, "Us", "We" or "Our") and you (hereinafter, "User," "Users," "your," or "yours"). Your use of our App shall be governed by the following T&C.
+				</p>
+			}
+			@SectionTitle("Age Restrictions") {
+				<p class="mb-4 text-neutral">
+					If you are a child under 13 years old (or such greater age required in your country or territory), you may only use our App after your parent or guardian has read and accepted these T&C. We reserve the right to suspend accounts without notice if we reasonably doubt you meet the minimum age requirement.
+				</p>
+			}
+			@SectionTitle("Registration") {
+				<p class="mb-4 text-neutral">
+					You agree to provide accurate registration information and update it promptly. We may send security codes via SMS/call. Failure to maintain accurate information may result in account termination.
+				</p>
+			}
+			@SectionTitle("Devices & Software") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">You must provide necessary devices/software to use our App. We may send notifications and updates automatically.</p>
+					<p>Subscription plans and pricing may change without notice. Payments are pre-paid and non-refundable.</p>
+				</div>
+			}
+			@SectionTitle("Acceptable Use") {
+				<div class="mb-6">
+					<h3 class="mb-2 text-xl font-semibold text-neutral">Permitted Use</h3>
+					<ul class="pl-6 mb-6 list-disc text-neutral">
+						<li>Personal, non-commercial purposes only</li>
+						<li>Good faith compliance with all laws</li>
+						<li>Appropriate content uploads</li>
+					</ul>
+				</div>
+				<div class="mb-6">
+					<h3 class="mb-2 text-xl font-semibold text-neutral">Prohibited Use</h3>
+					<ul class="pl-6 list-disc text-neutral">
+						<li>Commercial exploitation of the App</li>
+						<li>Reverse engineering or modification</li>
+						<li>Illegal/discriminatory content</li>
+						<li>Harassment of other users</li>
+						<li>Virus distribution</li>
+					</ul>
+				</div>
+			}
+			@SectionTitle("Privacy") {
+				<p class="mb-4 text-neutral">
+					By using our App, you agree to our <a href="/privacy" class="transition-colors hover:opacity-80 text-info">Privacy Policy</a>. Data is processed in the UK - international users consent to this transfer. We comply with COPPA and GDPR for children's data.
+				</p>
+			}
+			@SectionTitle("Limitation of Liability") {
+				<p class="mb-4 text-neutral">
+					WE EXCLUDE LIABILITY FOR INDIRECT DAMAGES (MAX $100 OR 100% OF PAYMENTS). SOME JURISDICTIONS MAY NOT ALLOW THESE LIMITATIONS.
+				</p>
+			}
+			@SectionTitle("Indemnification") {
+				<p class="mb-4 text-neutral">
+					You agree to defend and indemnify us against claims arising from your App use, breaches of these T&C, or misrepresentations.
+				</p>
+			}
+			@SectionTitle("Dispute Resolution") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">EU/UK/Swiss users may contact support@gofeedback.app or use BBB EU Privacy Shield for unresolved complaints.</p>
+					<p>Binding arbitration may apply for residual claims per Privacy Shield Annex 1.</p>
+				</div>
+			}
+			@SectionTitle("Amendments") {
+				<p class="mb-4 text-neutral">
+					We may modify these T&C at any time. Continued use after changes constitutes acceptance. Check regularly for updates.
+				</p>
+			}
+			@SectionTitle("Contact") {
+				<p class="text-neutral">
+					Questions? Contact <a href="mailto:support@gofeedback.app" class="transition-colors hover:opacity-80 text-info">support@gofeedback.app</a>
+				</p>
+			}
+		</div>
+	}
+}

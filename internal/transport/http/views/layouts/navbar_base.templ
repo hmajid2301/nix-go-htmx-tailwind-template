@@ -1,0 +1,24 @@
+package layouts
+
+import (
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/auth"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/components"
+)
+
+templ NavBarFooterBase(title string, description string, auth auth.AuthState) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			@components.Head(title, description)
+		</head>
+		<body
+			x-data="{ isOpen: false }"
+			class="bg-base-200 text-neutral"
+		>
+			@components.NavBar(auth)
+			{ children... }
+			@components.Footer()
+		</body>
+		@components.Scripts()
+	</html>
+}

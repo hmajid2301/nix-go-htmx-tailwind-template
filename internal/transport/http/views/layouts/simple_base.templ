@@ -1,0 +1,16 @@
+package layouts
+
+import "gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/components"
+
+templ SimpleBase(title string, description string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			@components.Head(title, description)
+		</head>
+		<body class="bg-base-200 text-neutral">
+			{ children... }
+		</body>
+		@components.Scripts()
+	</html>
+}

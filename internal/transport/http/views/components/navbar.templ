@@ -1,0 +1,86 @@
+
+package components
+
+import (
+	"fmt"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/auth"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/icons"
+)
+
+templ NavBar(auth auth.AuthState) {
+	<div>
+		<navbar class="py-2 px-4 shadow-sm navbar bg-base-100">
+			<div class="flex-1">
+				<a
+					href="/"
+					class="inline-flex h-auto hover:bg-opacity-20 btn btn-ghost hover:btn-ghost"
+				>
+					<img class="w-auto h-16" src="/static/images/logo.svg" alt="Logo"/>
+					<span class="text-xl">Go Feedback</span>
+				</a>
+			</div>
+			<div class="flex md:hidden">
+				<button class="btn btn-square btn-ghost">
+					@icons.Hamburger("")
+				</button>
+			</div>
+			<div class="hidden md:flex">
+				if auth.UseWaitList {
+					<button
+						onclick="auth_modal.showModal()"
+						class="transition-colors hover:border-none btn-block btn btn-neutral hover:bg-secondary hover:text-neutral"
+					>Join Early Access</button>
+				} else if auth.IsAuthenticated {
+					<div class="flex-none">
+						<div class="dropdown dropdown-end">
+							<div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+								<div class="w-10 rounded-full">
+									if auth.AvatarURL != "" {
+										<img
+											alt="Profile Avatar"
+											src={ auth.AvatarURL }
+										/>
+									} else {
+										<img
+											alt="Profile Avatar"
+											src={ fmt.Sprintf("https://api.dicebear.com/9.x/initials/svg?seed=%s", auth.Email) }
+										/>
+									}
+								</div>
+							</div>
+							<ul
+								tabindex="0"
+								class="p-2 mt-3 w-52 shadow menu menu-sm dropdown-content bg-base-100 rounded-box z-1"
+							>
+								<li>
+									<a class="justify-between">
+										Profile
+										<span class="badge">New</span>
+									</a>
+								</li>
+								<li><a>Settings</a></li>
+								<li><a href="/logout">Logout</a></li>
+							</ul>
+						</div>
+					</div>
+				} else {
+					<div>
+						<a
+							class="p-4 border-none btn btn-neutral hover:bg-secondary hover:text-neutral"
+							href="https://gofeedback-majiy.us.wristband.dev/login"
+						>
+							Log In
+						</a>
+						<a
+							class="p-4 btn btn-outline"
+							href="https://gofeedback-majiy.us.wristband.dev/signup"
+						>
+							Sign Up
+						</a>
+					</div>
+				}
+			</div>
+		</navbar>
+		@AuthModal()
+	</div>
+}

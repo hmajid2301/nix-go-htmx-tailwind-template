@@ -1,0 +1,84 @@
+package components
+
+import "gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/icons"
+
+templ Pricing() {
+	<section id="pricing" class="py-16 bg-syncwave-background">
+		<div class="container px-4 mx-auto">
+			<h2 class="mb-12 text-4xl font-bold text-center text-syncwave-text">
+				Straight forward Pricing for Every Stage
+			</h2>
+			<div class="grid gap-8 md:grid-cols-3">
+				<!-- Free Tier -->
+				<div class="p-6 rounded-lg border shadow-md transition-all hover:shadow-xl hover:scale-105 bg-slate-800 border-slate-700">
+					<h3 class="mb-4 text-2xl font-semibold text-syncwave-text">Free</h3>
+					<p class="mb-4 text-3xl font-bold text-syncwave-accent">$0<span class="text-xl text-slate-400">/month</span></p>
+					<ul class="mb-6 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Up to 100 users</span>
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Basic feedback collection</span>
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Public roadmap</span>
+						</li>
+					</ul>
+					<a href="#" class="block py-3 px-4 w-full text-center rounded-lg border-2 transition-colors border-syncwave-accent text-syncwave-accent hover:bg-slate-800">
+						Get Started
+					</a>
+				</div>
+				<!-- Startup Tier (Highlighted) -->
+				<div class="p-6 rounded-lg border-2 shadow-xl transition-all hover:scale-105 bg-slate-800 border-syncwave-accent">
+					<div class="mb-2">
+						<span class="py-1 px-3 text-sm font-bold rounded-full bg-syncwave-accent text-slate-900">Most Popular</span>
+					</div>
+					<h3 class="mb-4 text-2xl font-semibold text-syncwave-text">Startup</h3>
+					<p class="mb-4 text-3xl font-bold text-syncwave-accent">$29<span class="text-xl text-slate-400">/month</span></p>
+					<ul class="mb-6 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Up to 500 users</span>
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Advanced analytics</span>
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Custom branding</span>
+						</li>
+					</ul>
+					<a href="#" class="block py-3 px-4 w-full text-center rounded-lg transition-colors hover:bg-blue-400 bg-syncwave-accent text-slate-900">
+						Choose Startup
+					</a>
+				</div>
+				<!-- Pro Tier -->
+				<div class="p-6 rounded-lg border shadow-md transition-all hover:shadow-xl hover:scale-105 bg-slate-800 border-slate-700">
+					<h3 class="mb-4 text-2xl font-semibold text-syncwave-text">Pro</h3>
+					<p class="mb-4 text-3xl font-bold text-syncwave-accent">$99<span class="text-xl text-slate-400">/month</span></p>
+					<ul class="mb-6 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Unlimited users</span>
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Dedicated support</span>
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-8 h-auto text-emerald-400")
+							<span class="text-slate-400">Advanced security</span>
+						</li>
+					</ul>
+					<a href="#" class="block py-3 px-4 w-full text-center rounded-lg transition-colors hover:bg-blue-400 bg-syncwave-accent text-slate-900">
+						Choose Pro
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+}

@@ -1,0 +1,292 @@
+package components
+
+import "gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/icons"
+
+templ ProductShowcase() {
+	<section
+		id="productshowcase"
+		class="py-16"
+		x-data="{ isOpen: false, activeImage: { src: '', alt: '' }}"
+	>
+		<div class="container px-4 mx-auto">
+			<h2 class="mb-12 text-4xl font-bold text-center">
+				Features Showcase
+			</h2>
+			<!-- Upvotes Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div class="order-1 md:order-2">
+					<button
+						@click="activeImage = { src: '/static/images/product/upvotes.png', alt: 'Upvotes interface' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/upvotes.png" alt="Upvotes interface" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div class="order-2 md:order-1">
+					<h3 class="mb-4 text-3xl font-bold">Prioritize What Matters</h3>
+					<p class="text-lg">
+						Our voting system surfaces the most requested features automatically. Users can:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Upvote existing suggestions
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Submit new feature requests
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Track request status
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- Reviews Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div>
+					<button
+						@click="activeImage = { src: '/static/images/product/reviews.png', alt: 'AI Review Analysis' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/reviews.png" alt="AI Review Analysis" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div>
+					<h3 class="mb-4 text-3xl font-bold">AI-Powered Review Aggregation</h3>
+					<p class="text-lg">
+						Our AI system automatically collects and analyzes user feedback from multiple platforms:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Google Play Store & App Store reviews
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Social media (Reddit, Mastodon)
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Automatic duplicate detection
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Sentiment analysis scoring
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- Roadmap Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div class="order-1 md:order-2">
+					<button
+						@click="activeImage = { src: '/static/images/product/roadmap.png', alt: 'Roadmap interface' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/roadmap.png" alt="Roadmap interface" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div class="order-2 md:order-1">
+					<h3 class="mb-4 text-3xl font-bold">Transparent Roadmapping</h3>
+					<p class="text-lg">
+						Our Kanban-style roadmap keeps everyone aligned with:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Clear status tracking (Planned, In Progress, Done)
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Progress percentage indicators
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Estimated completion dates
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- Changelog Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div>
+					<button
+						@click="activeImage = { src: '/static/images/product/changelog.png', alt: 'Changelog interface' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/changelog.png" alt="Changelog interface" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div>
+					<h3 class="mb-4 text-3xl font-bold">Stay Updated</h3>
+					<p class="text-lg">
+						Our changelog system helps you:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Announce new features
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Document bug fixes
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Share improvement notes
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- Knowledge Base Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div class="order-1 md:order-2">
+					<button
+						@click="activeImage = { src: '/static/images/product/knowledge_base.png', alt: 'Knowledge Base interface' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/knowledge_base.png" alt="Knowledge Base interface" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div class="order-2 md:order-1">
+					<h3 class="mb-4 text-3xl font-bold">Self-Service Support</h3>
+					<p class="text-lg">
+						Our knowledge base includes:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Categorized articles
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Search functionality
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Feedback mechanisms
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- API Integrations Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div>
+					<button
+						@click="activeImage = { src: '/static/images/product/api.png', alt: 'API Integrations' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/api.png" alt="API Integrations" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div>
+					<h3 class="mb-4 text-3xl font-bold">Seamless Integrations</h3>
+					<p class="text-lg">
+						Connect with your existing stack through powerful integrations:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							REST API & Webhooks
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Intercom & Freshdesk
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Zapier automation
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Real-time sync
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- Feedback Widget Section -->
+			<div class="grid gap-8 items-center mb-16 md:grid-cols-2">
+				<div class="order-1 md:order-2">
+					<button
+						@click="activeImage = { src: '/static/images/product/widget.png', alt: 'Feedback Widget interface' }; isOpen = true"
+						class="p-0 w-full bg-transparent rounded-lg border-none shadow-lg transition-shadow hover:shadow-xl"
+					>
+						<img src="/static/images/product/widget.png" alt="Feedback Widget interface" class="w-full rounded-lg"/>
+					</button>
+				</div>
+				<div class="order-2 md:order-1">
+					<h3 class="mb-4 text-3xl font-bold">Embeddable Feedback Widget</h3>
+					<p class="text-lg">
+						Collect feedback directly from your website with our customizable widget:
+					</p>
+					<ul class="mt-4 space-y-3">
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							One-line script installation
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Custom color schemes and branding
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Real-time preview editor
+						</li>
+						<li class="flex items-center">
+							@icons.Tick("mr-2 w-6 h-6 text-emerald-400")
+							Built-in analytics dashboard
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- Enhanced Image Modal -->
+			<div
+				x-show="isOpen"
+				x-transition:enter="transition ease-out duration-200"
+				x-transition:enter-start="opacity-0"
+				x-transition:enter-end="opacity-100"
+				x-transition:leave="transition ease-in duration-150"
+				x-transition:leave-start="opacity-100"
+				x-transition:leave-end="opacity-0"
+				class="flex fixed inset-0 z-50 justify-center items-center bg-base-300/50 backdrop-blur-sm"
+				@click.away="isOpen = false"
+				@keydown.escape.window="isOpen = false"
+				role="dialog"
+				aria-modal="true"
+				:aria-label="'Enlarged view of ' + activeImage.alt"
+			>
+				<div class="relative p-4 w-full max-w-4xl max-h-[90vh]">
+					<button
+						@click="isOpen = false"
+						class="absolute right-0 -top-8 text-gray-600 transition-colors hover:text-gray-800 group"
+						aria-label="Close modal"
+					>
+						<div class="flex justify-center items-center w-10 h-10 bg-white rounded-full shadow-lg transition-shadow group-hover:shadow-xl">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								class="w-6 h-6"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M6 18L18 6M6 6l12 12"
+								></path>
+							</svg>
+						</div>
+					</button>
+					<img
+						:src="activeImage.src"
+						:alt="activeImage.alt"
+						class="object-contain w-full h-full rounded-lg shadow-xl"
+					/>
+				</div>
+			</div>
+		</div>
+	</section>
+}

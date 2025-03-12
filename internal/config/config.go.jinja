@@ -33,9 +33,16 @@ type Redis struct {
 	Address string
 }
 
-type JWT struct {
-	JWKSURL    string
-	AdminGroup string
+type Auth struct {
+	WaitListURL string
+	UseWaitList bool
+	WaitListID  string
+
+	AuthBaseURL  string
+	ClientID     string
+	ClientSecret string
+
+	CookieEncryptionKey []byte
 }
 
 type App struct {
@@ -64,8 +71,13 @@ type ConfigIn struct {
 	Port          int    `env:"{{service_prefix}}_WEBSERVER_PORT, default=8080"`
 	DefaultLocale string `env:"{{service_prefix}}_DEFAULT_LOCALE, default=en-GB"`
 
-	JWKSURL    string `env:"{{service_prefix}}_JWKS_URL"`
-	AdminGroup string `env:"{{service_prefix}}_JWT_ADMIN_GROUP"`
+	WaitListURL   string `env:"{{service_prefix}}_API_URL"`
+	UseWaitList   bool   `env:"{{service_prefix}}_USE_WAIT_LIST"`
+	WaitListID    string `env:"{{service_prefix}}_WAIT_LIST_ID"`
+	AuthBaseURL   string `env:"{{service_prefix}}_AUTH_BASE_URL"`
+	ClientSecret  string `env:"{{service_prefix}}_AUTH_CLIENT_SECRET"`
+	ClientID      string `env:"{{service_prefix}}_AUTH_CLIENT_ID"`
+	EncryptionKey string `env:"{{service_prefix}}_AUTH_COOKIE_ENCRYPTION_KEY"`
 }
 
 func LoadConfig(ctx context.Context) (Config, error) {
@@ -75,6 +87,11 @@ func LoadConfig(ctx context.Context) (Config, error) {
 	}
 
 	err := validateServerConfig(input)
+	if err != nil {
+		return Config{}, err
+	}
+
+	key, err := decodeKey(input.EncryptionKey)
 	if err != nil {
 		return Config{}, err
 	}
@@ -99,9 +116,16 @@ func LoadConfig(ctx context.Context) (Config, error) {
 		Redis: Redis{
 			Address: input.RedisAddress,
 		},
-		JWT: JWT{
-			JWKSURL:    input.JWKSURL,
-			AdminGroup: input.AdminGroup,
+		Auth: Auth{
+			WaitListURL: input.WaitListURL,
+			WaitListID:  input.WaitListID,
+			UseWaitList: input.UseWaitList,
+
+			AuthBaseURL:  input.AuthBaseURL,
+			ClientID:     input.ClientID,
+			ClientSecret: input.ClientSecret,
+
+			CookieEncryptionKey: key,
 		},
 		App: App{
 			Environment:   input.Environment,
@@ -140,5 +164,24 @@ func parseLogLevel(logLevel string) slog.Level {
 		return slog.LevelError
 	default:
 		return slog.LevelInfo
+	}
+}
+
+
+func decodeKey(encodedKey string) ([]byte, error) {
+	key, err := base64.URLEncoding.DecodeString(encodedKey)
+	if err != nil {
+		key, err = base64.StdEncoding.DecodeString(encodedKey)
+		if err != nil {
+			return nil, fmt.Errorf("invalid encryption key, failed base64 encoding")
+		}
+	}
+
+	switch len(key) {
+	// INFO: Valid AES key sizes
+	case 16, 24, 32:
+		return key, nil
+	default:
+		return nil, fmt.Errorf("invalid encryption key, invalid length %d bytes, need 16/24/32", len(key))
 	}
 }

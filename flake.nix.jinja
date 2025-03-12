@@ -12,6 +12,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    tailwindcss_daisy.url = "github:aabccd021/tailwindcss-daisyui-nix";
   };
 
   outputs = {
@@ -21,6 +22,7 @@
     gomod2nix,
     pre-commit-hooks,
     playwright,
+    tailwindcss_daisy,
     ...
   }: (flake-utils.lib.eachDefaultSystem (system: let
     overlay = final: prev: {
@@ -36,7 +38,7 @@
     };
 
     myPackages = with pkgs; [
-      go_1_23
+      go_1_24
 
       goose
       air
@@ -50,7 +52,8 @@
       golines
 
       playwright-driver
-      tailwindcss
+      tailwindcss_daisy.packages.${system}.default
+      watchman
       templ
       sqlc
     ];

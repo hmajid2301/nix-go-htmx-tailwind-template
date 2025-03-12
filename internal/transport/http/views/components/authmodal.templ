@@ -1,0 +1,82 @@
+package components
+
+import "gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/icons"
+
+templ AuthModal() {
+	<dialog id="auth_modal" class="modal">
+		<div class="modal-box">
+			<div class="p-8 space-y-6" id="auth_container">
+				<h2 class="text-3xl font-bold text-center text-neutral">Magic Link Login!</h2>
+				<p class="mt-2 text-lg text-base-neutral">
+					Enter your email below to receive a magic link for instant access.
+				</p>
+				<form
+					class="space-y-4"
+					hx-post="/waitlist"
+					hx-target="#auth_container"
+					hx-swap="innerHTML"
+					hx-ext="json-enc"
+				>
+					<label class="w-full input validator">
+						@icons.Email("h-6")
+						<input type="email" name="email" placeholder="hello@example.com" required/>
+					</label>
+					<div class="hidden validator-hint">Enter valid email address</div>
+					<button
+						type="submit"
+						class="p-4 transition-colors btn btn-neutral btn-block hover:bg-secondary hover:text-neutral"
+						hx-indicator=".hx-indicator"
+						hx-disabled-elt="this"
+					>
+						<span class="htmx-show">Send Magic Link ✨</span>
+						<span class="hidden justify-center items-center hx-indicator">
+							<span class="loading loading-spinner"></span>
+							<span class="ml-2">Sending...</span>
+						</span>
+					</button>
+				</form>
+				<div class="text-center text-neutral">
+					<p class="text-sm">
+						By continuing, you agree to our
+						<br/>
+						<a href="/terms" class="underline text-neutral hover:text-info">Terms</a> and <a href="/privacy" class="underline text-neutral hover:text-info">Privacy Policy</a>
+					</p>
+				</div>
+			</div>
+		</div>
+		<form method="dialog" class="modal-backdrop">
+			<button>close</button>
+		</form>
+	</dialog>
+}
+
+templ SuccessWaitlist(email string) {
+	<div class="p-8 space-y-6 text-center">
+		<div class="flex justify-center text-neutral">
+			@icons.Email("text-neutral h-10")
+		</div>
+		<h3 class="text-2xl font-semibold">
+			You're on the Waitlist 🎉
+		</h3>
+		<div class="space-y-6">
+			<p>Thank you for your interest in our application.</p>
+			<p>
+				We'll notify you at
+				<br/>
+				<span class="font-mono text-primary">{ email }</span>
+				<br/>
+				when we're ready to launch.
+			</p>
+		</div>
+	</div>
+}
+
+templ ErrorMessage(message string) {
+	<div class="p-8 space-y-4 text-center animate-fade-in">
+		<div class="flex justify-center">
+			@icons.Warning("text-secondary h-16")
+		</div>
+		<h3 class="text-2xl font-bold text-neutral">Oops! Something went wrong</h3>
+		<p class="text-error-content">{ message }</p>
+	</div>
+}

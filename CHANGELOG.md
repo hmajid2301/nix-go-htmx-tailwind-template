@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Auth for wristband, adapter and config.
+
+### Fixed
+
+- Removed some unused views, moved them to a single place.
+
 ## [0.3.0] - 2025-02-16
 
 ### Fixed

@@ -43,21 +43,21 @@ tasks:
     desc: Runs all the unit tests.
     cmds:
     {% raw -%}
-      - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -skip '^TestIntegration' ./internal/...
+      - gotestsum --format testname --hide-summary=skipped -- -skip '^TestIntegration' ./internal/... {{.CLI_ARGS}}
     {%- endraw %}
 
   tests:integration:
     desc: Runs all the integration tests.
     cmds:
     {% raw -%}
-      - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -run ^TestIntegration ./internal/...
+      - gotestsum --format testname --hide-summary=skipped -- {{.CLI_ARGS}} -run ^TestIntegration ./internal/... {{.CLI_ARGS}}
     {%- endraw %}
 
   tests:e2e:
     desc: Runs e2e tests with playwright.
     cmds:
     {% raw -%}
-      - gotestsum --format standard-verbose -- {{.CLI_ARGS}} ./tests/e2e/...
+      - gotestsum --format standard-verbose -- ./tests/e2e/... {{.CLI_ARGS}}
     {%- endraw %}
 
   tests:e2e:quiet:
@@ -80,7 +80,7 @@ tasks:
     desc: Watch for file changes and run commands, i.e. generate templates or tailwindcss
     cmds:
       - templ generate -watch --proxy="http://localhost:8080" --open-browser=true &
-      - tailwindcss --watch=always -i ./static/css/tailwind.css -o ./static/css/styles.css --minify &
+      - tailwindcss --watch=always -i ./static/css/tailwind.css -o ./static/css/styles.css --minify --content './internal/transport/http/views/**/*.templ' &
       # TODO: do we want to add watch commands for the following?
       # - mockery --all
       # - sqlc generate
@@ -90,7 +90,7 @@ tasks:
     cmds:
       - mockery --all
       - templ generate
-      - tailwindcss -i ./static/css/tailwind.css -o ./static/css/styles.css
+      - tailwindcss -i ./static/css/tailwind.css -o ./static/css/styles.css --minify --content './internal/transport/http/views/**/*.templ'
       - sqlc generate
       - gomod2nix generate
       - task: format

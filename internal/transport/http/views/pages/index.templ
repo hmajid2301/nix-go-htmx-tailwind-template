@@ -1,0 +1,17 @@
+package pages
+
+import (
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/auth"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/components"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/layouts"
+)
+
+templ Index(title string, description string, auth auth.AuthState) {
+	@layouts.NavBarFooterBase(title, description, auth) {
+		@components.Hero()
+		@components.Features()
+		@components.ProductShowcase()
+		// INFO: don't show pricing for fake door
+		// @components.Pricing()
+	}
+}

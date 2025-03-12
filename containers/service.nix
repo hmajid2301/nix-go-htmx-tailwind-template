@@ -3,14 +3,14 @@
   package,
 }:
 pkgs.dockerTools.buildImage {
-  name = "{{project_slug}}";
+  name = "banterbus";
   tag = "latest";
   created = "now";
   copyToRoot = pkgs.buildEnv {
     name = "image-root";
     paths = [
-       package
-       pkgs.cacert
+      package
+      pkgs.cacert
     ];
     pathsToLink = ["/bin"];
   };
@@ -18,10 +18,10 @@ pkgs.dockerTools.buildImage {
     ExposedPorts = {
       "8080/tcp" = {};
     };
-    Cmd = ["${package}/bin/server"];
-      Env = [
-        "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-        "SSL_CERT_DIR=${pkgs.cacert}/etc/ssl/certs/"
-      ];
+    Cmd = ["${package}/bin/banterbus"];
+    Env = [
+      "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+      "SSL_CERT_DIR=${pkgs.cacert}/etc/ssl/certs/"
+    ];
   };
 }

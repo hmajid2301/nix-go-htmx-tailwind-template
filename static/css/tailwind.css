@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: cupcake --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "cupcake";
+  default: true;
+  --color-neutral: #291334;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+}

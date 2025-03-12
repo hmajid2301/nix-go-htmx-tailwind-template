@@ -1,0 +1,81 @@
+package legal
+
+import (
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/auth"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/layouts"
+)
+
+templ EULA(title string, description string, auth auth.AuthState) {
+	@layouts.NavBarFooterBase(title, description, auth) {
+		<div class="container flex flex-col content-center px-4 pt-20 mx-auto max-w-4xl min-h-screen bg-base-100">
+			<div class="mb-8">
+				<h1 class="text-4xl font-bold text-neutral">End User License Agreement</h1>
+				<p class="mt-2 text-sm text-neutral">Last Updated: February 26, 2025</p>
+			</div>
+			@SectionTitle("Acceptance") {
+				<p class="mb-4 text-neutral">
+					By using Go Feedback, you agree to this EULA and our
+					<a href="/terms" class="transition-colors hover:opacity-80 text-info">Terms & Conditions</a>.
+					Continued use constitutes acceptance of all terms.
+				</p>
+			}
+			@SectionTitle("License Grant") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">We grant you a limited, non-exclusive license to:</p>
+					<ul class="pl-6 list-disc">
+						<li>Access and use the App for personal, non-commercial purposes</li>
+						<li>Create content through the App interface</li>
+						<li>Receive updates and new features</li>
+					</ul>
+					<p class="mt-4">This license is revocable at any time without notice.</p>
+				</div>
+			}
+			@SectionTitle("Restrictions") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">You may not:</p>
+					<ul class="pl-6 list-disc">
+						<li>Reverse engineer or modify the App</li>
+						<li>Use for commercial purposes without written consent</li>
+						<li>Distribute or sell access to the App</li>
+						<li>Bypass any security measures</li>
+					</ul>
+				</div>
+			}
+			@SectionTitle("Ownership") {
+				<p class="mb-4 text-neutral">
+					Go Feedback retains all intellectual property rights. You receive no ownership rights
+					through this EULA.
+				</p>
+			}
+			@SectionTitle("Liability") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">Our total liability is limited to $100 USD. We exclude liability for:</p>
+					<ul class="pl-6 list-disc">
+						<li>Indirect or consequential damages</li>
+						<li>Lost profits or data</li>
+						<li>Service interruptions</li>
+					</ul>
+				</div>
+			}
+			@SectionTitle("Termination") {
+				<p class="mb-4 text-neutral">
+					We may terminate access immediately for violations. You may terminate by deleting
+					your account and ceasing all use.
+				</p>
+			}
+			@SectionTitle("Changes") {
+				<p class="mb-4 text-neutral">
+					We may update this EULA at any time. Continued use after changes constitutes acceptance.
+				</p>
+			}
+			@SectionTitle("Contact") {
+				<p class="text-neutral">
+					Questions? Contact
+					<a href="mailto:support@gofeedback.app" class="transition-colors hover:opacity-80 text-info">
+						support@gofeedback.app
+					</a>
+				</p>
+			}
+		</div>
+	}
+}

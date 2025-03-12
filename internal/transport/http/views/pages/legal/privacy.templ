@@ -1,0 +1,125 @@
+package legal
+
+import (
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/auth"
+	"gitlab.com/hmajid2301/gofeedback/internal/transport/http/views/layouts"
+)
+
+templ PrivacyPolicy(title string, description string, auth auth.AuthState) {
+	@layouts.NavBarFooterBase(title, description, auth) {
+		<div class="container flex flex-col content-center px-4 pt-20 mx-auto max-w-4xl min-h-screen bg-base-100">
+			<div class="mb-8">
+				<h1 class="text-4xl font-bold text-neutral">Privacy Policy</h1>
+				<p class="mt-2 text-sm text-neutral">Last Updated: February 26, 2025</p>
+			</div>
+			@SectionTitle("Introduction") {
+				<p class="mb-4 text-neutral">
+					We protect your personal information while using Go Feedback (the "App"). This Policy explains how we collect,
+					use, and safeguard your data in compliance with global privacy laws.
+				</p>
+			}
+			@SectionTitle("Data We Collect") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">To provide our services, we collect:</p>
+					<ul class="pl-6 list-disc">
+						<li>Account information (email, profile details)</li>
+						<li>Payment data via Lemon Squeezy</li>
+						<li>Social media info when linking accounts</li>
+						<li>Usage data (IP, device info, interactions)</li>
+					</ul>
+				</div>
+			}
+			@SectionTitle("Data Collection Methods") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">We gather information through:</p>
+					<ul class="pl-6 list-disc">
+						<li>Direct user input during registration</li>
+						<li>Automated tracking technologies</li>
+						<li>Third-party services (e.g., social logins)</li>
+					</ul>
+					<p class="mt-4">Learn more in our <a href="/cookies" class="transition-colors hover:opacity-80 text-info">Cookie Policy</a>.</p>
+				</div>
+			}
+			@SectionTitle("Data Usage") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">We use your data to:</p>
+					<ul class="pl-6 list-disc">
+						<li>Provide and improve services</li>
+						<li>Process subscriptions</li>
+						<li>Communicate updates</li>
+						<li>Prevent fraud</li>
+					</ul>
+				</div>
+			}
+			@SectionTitle("Data Retention") {
+				<p class="mb-4 text-neutral">
+					We retain data while your account is active and up to 5 years after closure for legal compliance.
+					Some information may be kept longer for fraud prevention.
+				</p>
+			}
+			@SectionTitle("Children's Privacy") {
+				<p class="mb-4 text-neutral">
+					Our services are not directed to users under 13. We delete unauthorized child accounts immediately.
+					Parents may contact <a href="mailto:support@gofeedback.app" class="transition-colors hover:opacity-80 text-info">support@gofeedback.app</a> for concerns.
+				</p>
+			}
+			@SectionTitle("Data Sharing") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">We only share data with:</p>
+					<ul class="pl-6 list-disc">
+						<li>Payment processors</li>
+						<li>Analytics providers (Plausible, PostHog)</li>
+						<li>Legal authorities when required</li>
+					</ul>
+				</div>
+			}
+			@SectionTitle("Data Security") {
+				<p class="mb-4 text-neutral">
+					We implement industry-standard measures to protect your information. Data is stored in secure UK-based servers.
+				</p>
+			}
+			@SectionTitle("Your Rights") {
+				<div class="mb-6 text-neutral">
+					<p class="mb-4">You can:</p>
+					<ul class="pl-6 list-disc">
+						<li>Access/update your information</li>
+						<li>Request data deletion</li>
+						<li>Opt-out of marketing</li>
+						<li>Object to processing</li>
+					</ul>
+					<p class="mt-4">EU users have additional GDPR rights outlined in full policy.</p>
+				</div>
+			}
+			@SectionTitle("California Rights") {
+				<p class="mb-4 text-neutral">
+					CCPA grants right to know/delete personal data. Contact
+					<a href="mailto:support@gofeedback.app" class="transition-colors hover:opacity-80 text-info">support@gofeedback.app</a>
+					to exercise rights.
+				</p>
+			}
+			@SectionTitle("Updates") {
+				<p class="mb-4 text-neutral">
+					We may update this policy. Continued use after changes constitutes acceptance.
+				</p>
+			}
+			@SectionTitle("Contact") {
+				<div class="text-neutral">
+					<p class="mb-2">Questions? Contact our team:</p>
+					<p class="mb-2">
+						<a href="mailto:support@gofeedback.app" class="transition-colors hover:opacity-80 text-info">
+							support@gofeedback.app
+						</a>
+					</p>
+					<p>EU Representative: Haseeb Majid - hello@haseebmajid.dev</p>
+				</div>
+			}
+		</div>
+	}
+}
+
+templ SectionTitle(title string) {
+	<div class="mb-8">
+		<h2 class="mb-4 text-2xl font-bold text-neutral">{ title }</h2>
+		{ children... }
+	</div>
+}
