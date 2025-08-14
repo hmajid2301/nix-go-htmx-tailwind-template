@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"net"
@@ -13,11 +14,14 @@ import (
 
 // INFO: we need another struct for actual config values once we've passed the input ones
 type Config struct {
-	DB      Database
-	Server  Server
-	Redis   Redis
-	App     App
-	JWT     JWT
+	DB           Database
+	Server       Server
+	Redis        Redis
+	App          App
+	Auth         Auth
+	S3           S3
+	Subscription Subscription
+	Telemetry    Telemetry
 }
 
 type Database struct {
@@ -33,16 +37,34 @@ type Redis struct {
 	Address string
 }
 
+type S3 struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	Region          string
+	BucketName      string
+}
+
 type Auth struct {
 	WaitListURL string
 	UseWaitList bool
 	WaitListID  string
 
-	AuthBaseURL  string
+	BaseURL      string
 	ClientID     string
 	ClientSecret string
 
 	CookieEncryptionKey []byte
+}
+
+type Subscription struct {
+	WebhookKey      string
+	Token           string
+	DefaultPlanName string
+}
+
+type Telemetry struct {
+	SentryDSN string
 }
 
 type App struct {
@@ -57,7 +79,7 @@ type ConfigIn struct {
 	DBUsername string `env:"{{service_prefix}}_DB_USERNAME"`
 	DBPassword string `env:"{{service_prefix}}_DB_PASSWORD"`
 	DBHost     string `env:"{{service_prefix}}_DB_HOST"`
-	DBPort     string `env:"{{service_prefix}}_DB_PORT, default=5432"`
+	DBPort     int    `env:"{{service_prefix}}_DB_PORT, default=5432"`
 	DBName     string `env:"{{service_prefix}}_DB_NAME, default={{project_slug}}"`
 
 	RedisAddress string `env:"{{service_prefix}}_REDIS_ADDRESS"`
@@ -71,13 +93,25 @@ type ConfigIn struct {
 	Port          int    `env:"{{service_prefix}}_WEBSERVER_PORT, default=8080"`
 	DefaultLocale string `env:"{{service_prefix}}_DEFAULT_LOCALE, default=en-GB"`
 
-	WaitListURL   string `env:"{{service_prefix}}_API_URL"`
+	AccessKeyID     string `env:"AWS_ACCESS_KEY_ID"`
+	SecretAccessKey string `env:"AWS_SECRET_ACCESS_KEY"`
+	Region          string `env:"AWS_REGION"`
+	BucketName      string `env:"BUCKET_NAME"`
+	Endpoint        string `env:"AWS_ENDPOINT_URL_S3"`
+
+	WaitListURL   string `env:"{{service_prefix}}_WAITLIST_API_URL"`
 	UseWaitList   bool   `env:"{{service_prefix}}_USE_WAIT_LIST"`
 	WaitListID    string `env:"{{service_prefix}}_WAIT_LIST_ID"`
 	AuthBaseURL   string `env:"{{service_prefix}}_AUTH_BASE_URL"`
 	ClientSecret  string `env:"{{service_prefix}}_AUTH_CLIENT_SECRET"`
 	ClientID      string `env:"{{service_prefix}}_AUTH_CLIENT_ID"`
 	EncryptionKey string `env:"{{service_prefix}}_AUTH_COOKIE_ENCRYPTION_KEY"`
+
+	SubscriptionWebhookKey  string `env:"{{service_prefix}}_SUBSCRIPTION_WEBHOOK_KEY"`
+	SubscriptionToken       string `env:"{{service_prefix}}_SUBSCRIPTION_TOKEN"`
+	SubscriptionDefaultPlan string `env:"{{service_prefix}}_SUBSCRIPTION_DEFAULT_PLAN, default=Free"`
+
+	SentryDSN string `env:"{{service_prefix}}_SENTRY_DSN"`
 }
 
 func LoadConfig(ctx context.Context) (Config, error) {
@@ -97,7 +131,7 @@ func LoadConfig(ctx context.Context) (Config, error) {
 	}
 
 	uri := fmt.Sprintf(
-		"postgresql://%s:%s@%s:%s/%s",
+		"postgresql://%s:%s@%s:%d/%s",
 		input.DBUsername,
 		input.DBPassword,
 		input.DBHost,
@@ -116,16 +150,28 @@ func LoadConfig(ctx context.Context) (Config, error) {
 		Redis: Redis{
 			Address: input.RedisAddress,
 		},
+		S3: S3{
+			Endpoint:        input.Endpoint,
+			AccessKeyID:     input.AccessKeyID,
+			SecretAccessKey: input.SecretAccessKey,
+			Region:          input.Region,
+			BucketName:      input.BucketName,
+		},
 		Auth: Auth{
 			WaitListURL: input.WaitListURL,
 			WaitListID:  input.WaitListID,
 			UseWaitList: input.UseWaitList,
 
-			AuthBaseURL:  input.AuthBaseURL,
+			BaseURL:      input.AuthBaseURL,
 			ClientID:     input.ClientID,
 			ClientSecret: input.ClientSecret,
 
 			CookieEncryptionKey: key,
+		},
+		Subscription: Subscription{
+			WebhookKey:      input.SubscriptionWebhookKey,
+			Token:           input.SubscriptionToken,
+			DefaultPlanName: input.SubscriptionDefaultPlan,
 		},
 		App: App{
 			Environment:   input.Environment,
@@ -133,6 +179,9 @@ func LoadConfig(ctx context.Context) (Config, error) {
 			DefaultLocale: i18n.Code(input.DefaultLocale),
 			BaseDelay:     time.Millisecond * time.Duration(input.BaseDelay),
 			Retries:       input.Retries,
+		},
+		Telemetry: Telemetry{
+			SentryDSN: input.SentryDSN,
 		},
 	}
 

@@ -120,11 +120,11 @@ func (a *AuthClient) Login(ctx context.Context, tenant string) (string, string, 
 	return u.String(), verifier, nil
 }
 
-func (a *AuthClient) Callback(ctx context.Context, code string, verifier string, tenant string) (*TokenResponse, error) {
+func (a *AuthClient) Callback(ctx context.Context, code string, verifier string) (*TokenResponse, error) {
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("code", code)
-	formData.Add("scope", "openid offline_access email profile")
+	formData.Set("scope", "openid offline_access email profile")
 	formData.Set("code_verifier", verifier)
 
 	token, err := a.getJWT(ctx, formData)
@@ -132,7 +132,6 @@ func (a *AuthClient) Callback(ctx context.Context, code string, verifier string,
 		return nil, fmt.Errorf("failed to get JWT: %w", err)
 	}
 
-	token.TenantDomain = tenant
 	return token, nil
 }
 
@@ -217,7 +216,8 @@ func (a *AuthClient) GetUserInfo(ctx context.Context, token string) (*AuthUser, 
 func (a *AuthClient) RefreshAccessToken(ctx context.Context, refreshToken string) (*TokenResponse, error) {
 	formData := url.Values{}
 	formData.Set("grant_type", "refresh_token")
-	formData.Set("refreshToken", refreshToken)
+	formData.Set("scope", "openid offline_access email profile")
+	formData.Set("refresh_token", refreshToken)
 
 	token, err := a.getJWT(ctx, formData)
 	if err != nil {
@@ -227,8 +227,92 @@ func (a *AuthClient) RefreshAccessToken(ctx context.Context, refreshToken string
 	return token, nil
 }
 
-type UserUpdate struct {
-	TenantID string `json:"tenantId"`
+type InviteDetails struct {
+	TenantID string `json:"tenantID"`
+	Email    string `json:"email"`
+}
+
+func (a *AuthClient) InviteUser(ctx context.Context, token string, inviteDetails InviteDetails) error {
+	url := fmt.Sprintf("%s/api/v1/new-user-invitation/invite-user", a.wristband.BaseURL)
+
+	inviteRequestBody, err := json.Marshal(inviteDetails)
+	if err != nil {
+		return fmt.Errorf("error marshalling request: %w", err)
+	}
+
+	req, err := retryablehttp.NewRequestWithContext(ctx, "POST", url, inviteRequestBody)
+	if err != nil {
+		return fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error making new user invitation request: %w", err)
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("userinfo request failed with status (%d): %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
+
+type WristbandInvitationResponse struct {
+	TotalResults int64        `json:"totalResults"`
+	StartIndex   int32        `json:"startIndex"`
+	ItemsPerPage int32        `json:"itemsPerPage"`
+	Items        []Invitation `json:"items"`
+}
+
+type Invitation struct {
+	ExpirationTime time.Time `json:"expirationTime"`
+	Email          string    `json:"email,omitempty"`
+}
+
+func (a *AuthClient) GetInvitedUsers(ctx context.Context, token string, tenantID string) ([]Invitation, error) {
+	url := fmt.Sprintf("%s/api/v1/tenants/%s/new-user-invitation-requests?status=PENDING_INVITE_ACCEPTANCE&status=PENDING_SESSION_CREATION", a.wristband.BaseURL, tenantID)
+
+	req, err := retryablehttp.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching invitations: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"invitation request failed with status %d: %s",
+			resp.StatusCode,
+			string(respBody),
+		)
+	}
+
+	var apiResponse WristbandInvitationResponse
+	if err := json.Unmarshal(respBody, &apiResponse); err != nil {
+		return nil, fmt.Errorf("error parsing response: %w", err)
+	}
+
+	return apiResponse.Items, nil
 }
 
 // TODO: move somewhere common, used in cookie and here keep it generic?.
